@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Stopwatch</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .group {
+            margin-bottom: 20px;
+        }
+        .stopwatch {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .time {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+    </style>
+    <script>
+        let stopwatches = {};
+
+        function createGroup() {
+            const groupName = document.getElementById('groupName').value;
+            if (!groupName) return;
+
+            if (!stopwatches[groupName]) {
+                stopwatches[groupName] = [];
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'group';
+                groupDiv.id = `group-${groupName}`;
+                groupDiv.innerHTML = `
+                    <h3>${groupName}</h3>
+                    <button onclick="addStopwatch('${groupName}')">Add Stopwatch</button>
+                    <div class="stopwatches"></div>
+                    <button onclick="calculateTotal('${groupName}')">Calculate Total Time</button>
+                    <div id="total-${groupName}"></div>
+                `;
+                document.getElementById('groups').appendChild(groupDiv);
+            }
+        }
+
+        function addStopwatch(groupName) {
+            const groupDiv = document.getElementById(`group-${groupName}`).querySelector('.stopwatches');
+            const stopwatch = {
+                startTime: null,
+                elapsedTime: 0,
+                interval: null
+            };
+            stopwatches[groupName].push(stopwatch);
+
+            const stopwatchDiv = document.createElement('div');
+            stopwatchDiv.className = 'stopwatch';
+            stopwatchDiv.innerHTML = `
+                <span class="time">00:00:00</span>
+                <button onclick="startStopwatch('${groupName}', ${stopwatches[groupName].length - 1})">Start</button>
+                <button onclick="stopStopwatch('${groupName}', ${stopwatches[groupName].length - 1})">Stop</button>
+                <button onclick="resetStopwatch('${groupName}', ${stopwatches[groupName].length - 1})">Reset</button>
+            `;
+            groupDiv.appendChild(stopwatchDiv);
+        }
+
+        function updateTime(groupName, index) {
+            const stopwatch = stopwatches[groupName][index];
+            const timeSpan = document.querySelector(`#group-${groupName} .stopwatches`).children[index].querySelector('.time');
+            const elapsedTime = Date.now() - stopwatch.startTime + stopwatch.elapsedTime;
+            const date = new Date(elapsedTime);
+            timeSpan.textContent = new Date(elapsedTime).toISOString().substr(11, 8);
+        }
+
+        function startStopwatch(groupName, index) {
+            const stopwatch = stopwatches[groupName][index];
+            if (!stopwatch.startTime) {
+                stopwatch.startTime = Date.now();
+                stopwatch.interval = setInterval(() => updateTime(groupName, index), 1000);
+            }
+        }
+
+        function stopStopwatch(groupName, index) {
+            const stopwatch = stopwatches[groupName][index];
+            if (stopwatch.startTime) {
+                clearInterval(stopwatch.interval);
+                stopwatch.elapsedTime += Date.now() - stopwatch.startTime;
+                stopwatch.startTime = null;
+            }
+        }
+
+        function resetStopwatch(groupName, index) {
+            const stopwatch = stopwatches[groupName][index];
+            clearInterval(stopwatch.interval);
+            stopwatch.startTime = null;
+            stopwatch.elapsedTime = 0;
+            document.querySelector(`#group-${groupName} .stopwatches`).children[index].querySelector('.time').textContent = "00:00:00";
+        }
+
+        function calculateTotal(groupName) {
+            const total = stopwatches[groupName].reduce((acc, stopwatch) => acc + stopwatch.elapsedTime, 0);
+            const date = new Date(total);
+            document.getElementById(`total-${groupName}`).textContent = `Total Time: ${new Date(total).toISOString().substr(11, 8)}`;
+        }
+    </script>
+</head>
+<body>
+    <h1>Group Stopwatch</h1>
+    <div>
+        <input type="text" id="groupName" placeholder="Enter group name">
+        <button onclick="createGroup()">Create Group</button>
+    </div>
+    <div id="groups"></div>
+</body>
+</html>
